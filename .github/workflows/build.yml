@@ -38,8 +38,13 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
+      # 契約のスタブを build/repo に publish する。同じ Gradle の実行で build すると
+      # テストのクラスパスがスタブを見つけられないため、別の手順に分ける
+      - name: Publish contract stubs
+        run: ./gradlew buildContracts
+
       - name: Build and unit tests
-        run: ./gradlew buildContracts build -x :ftgo-end-to-end-tests:test
+        run: ./gradlew build -x :ftgo-end-to-end-tests:test
 
       - name: Upload test reports
         if: failure()
@@ -75,9 +80,14 @@ jobs:
           fi
           docker-compose version
 
+      # 契約のスタブを build/repo に publish する。同じ Gradle の実行で build すると
+      # テストのクラスパスがスタブを見つけられないため、別の手順に分ける
+      - name: Publish contract stubs
+        run: ./gradlew buildContracts
+
       - name: Start services
         id: start
-        run: ./gradlew buildContracts :composeUp
+        run: ./gradlew :composeUp
 
       - name: End-to-end tests
         run: ./run-end-to-end-tests.sh
