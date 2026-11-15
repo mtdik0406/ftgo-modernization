@@ -19,6 +19,9 @@ env:
   JAVA_VERSION: "8"
   TRIVY_VERSION: "0.76.2"
   TRIVY_SHA256: "bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf"
+  # docker-compose.yml は公開ポートを 127.0.0.1 だけにしている（#2）。gradle-docker-compose-plugin は
+  # Linux では既定でネットワークのゲートウェイの IP（172.x.0.1）につなぐため、つなぐ先を明示する
+  SERVICES_HOST: "127.0.0.1"
 
 jobs:
   build:
