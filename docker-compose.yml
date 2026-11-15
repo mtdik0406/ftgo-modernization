@@ -3,7 +3,7 @@ services:
   zookeeper:
     image: eventuateio/eventuate-zookeeper:$EVENTUATE_COMMON_VERSION
     ports:
-      - 2181:2181
+      - "127.0.0.1:2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       KAFKA_HEAP_OPTS: -Xmx64m
@@ -11,7 +11,7 @@ services:
   kafka:
     image: "eventuateio/eventuate-kafka:$EVENTUATE_MESSAGING_KAFKA_IMAGE_VERSION"
     ports:
-      - 9092:9092
+      - "127.0.0.1:9092:9092"
     depends_on:
       - zookeeper
     environment:
@@ -29,7 +29,7 @@ services:
         EVENTUATE_COMMON_VERSION: ${EVENTUATE_COMMON_VERSION?}
         EVENTUATE_SAGA_VERSION: ${EVENTUATE_SAGA_VERSION?}
     ports:
-      - 3306:3306
+      - "127.0.0.1:3306:3306"
     environment:
       - MYSQL_ROOT_PASSWORD=rootpassword
       - MYSQL_USER=mysqluser
@@ -37,7 +37,7 @@ services:
   cdc-service:
     image: eventuateio/eventuate-cdc-service:$EVENTUATE_CDC_VERSION
     ports:
-      - "8099:8080"
+      - "127.0.0.1:8099:8080"
     depends_on:
       - mysql
       - kafka
@@ -96,7 +96,7 @@ services:
       args:
           baseImageVersion: ${EVENTUATE_JAVA_BASE_IMAGE_VERSION}
     ports:
-      - "8081:8080"
+      - "127.0.0.1:8081:8080"
     depends_on:
       - mysql
       - kafka
@@ -115,7 +115,7 @@ services:
       args:
           baseImageVersion: ${EVENTUATE_JAVA_BASE_IMAGE_VERSION}
     ports:
-      - "8082:8080"
+      - "127.0.0.1:8082:8080"
     depends_on:
       - mysql
       - kafka
@@ -138,7 +138,7 @@ services:
         args:
             baseImageVersion: ${EVENTUATE_JAVA_BASE_IMAGE_VERSION}
       ports:
-        - "8083:8080"
+        - "127.0.0.1:8083:8080"
       depends_on:
         - mysql
         - kafka
@@ -158,7 +158,7 @@ services:
         args:
             baseImageVersion: ${EVENTUATE_JAVA_BASE_IMAGE_VERSION}
       ports:
-        - "8084:8080"
+        - "127.0.0.1:8084:8080"
       depends_on:
         - mysql
         - kafka
@@ -178,7 +178,7 @@ services:
           args:
               baseImageVersion: ${EVENTUATE_JAVA_BASE_IMAGE_VERSION}
         ports:
-          - "8085:8080"
+          - "127.0.0.1:8085:8080"
         depends_on:
           - mysql
           - kafka
@@ -198,7 +198,7 @@ services:
       args:
           baseImageVersion: ${EVENTUATE_JAVA_BASE_IMAGE_VERSION}
     ports:
-      - "8089:8080"
+      - "127.0.0.1:8089:8080"
     depends_on:
       - mysql
       - kafka
@@ -221,7 +221,7 @@ services:
       args:
           baseImageVersion: ${EVENTUATE_JAVA_BASE_IMAGE_VERSION}
     ports:
-      - "8086:8080"
+      - "127.0.0.1:8086:8080"
     depends_on:
       - kafka
       - zookeeper
@@ -241,7 +241,7 @@ services:
       args:
           baseImageVersion: ${EVENTUATE_JAVA_BASE_IMAGE_VERSION}
     ports:
-      - "8087:8080"
+      - "127.0.0.1:8087:8080"
     environment:
       ORDER_DESTINATIONS_ORDERSERVICEURL: http://ftgo-order-service:8080
       ORDER_DESTINATIONS_ORDERHISTORYSERVICEURL: http://ftgo-order-history-service:8080
@@ -253,14 +253,14 @@ services:
   zipkin:
       image: openzipkin/zipkin:2.21
       ports:
-       - "9411:9411"
+       - "127.0.0.1:9411:9411"
       environment:
         JAVA_OPTS: -Xmx128m
 
   dynamodblocal:
     build: ./dynamodblocal
     ports:
-     - "8000:8000"
+     - "127.0.0.1:8000:8000"
     environment:
       JAVA_OPTS: -Xmx128m
 
@@ -278,7 +278,7 @@ services:
   kafka-gui:
     image: quay.io/cloudhut/kowl:master-1d07695
     ports:
-      - 9088:8080
+      - "127.0.0.1:9088:8080"
     depends_on:
       - kafka
     environment:
