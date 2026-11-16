@@ -34,13 +34,19 @@ services:
       - MYSQL_ROOT_PASSWORD=rootpassword
       - MYSQL_USER=mysqluser
       - MYSQL_PASSWORD=mysqlpw
+    healthcheck: # /healthcheck.sh は初期化が終わるまで失敗する（元のイメージのもの）
+      test: /healthcheck.sh
+      interval: 5s
+      start_period: 180s
   cdc-service:
     image: eventuateio/eventuate-cdc-service:$EVENTUATE_CDC_VERSION
     ports:
       - "127.0.0.1:8099:8080"
     depends_on:
-      - mysql
-      - kafka
+      mysql: # 初期化の途中に binlog を読み始めると読めなくなるため、初期化が終わるまで待つ
+        condition: service_healthy
+      kafka:
+        condition: service_started
     environment:
       EVENTUATELOCAL_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       EVENTUATELOCAL_ZOOKEEPER_CONNECTION_STRING: zookeeper:2181
