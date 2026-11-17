@@ -92,11 +92,8 @@ jobs:
         id: start
         run: ./gradlew :composeUp
 
-      # run-end-to-end-tests.sh は ftgo-end-to-end-tests の composeUp で全サービスをもう一度起動する。
-      # CI ではそのときイメージが作り直されて MySQL などのコンテナが再作成され、binlog が初期化されて
-      # cdc-service が読めなくなる。起動は上の :composeUp（インフラを先に待つ）の 1 回だけにする
       - name: End-to-end tests
-        run: ./gradlew :ftgo-end-to-end-tests:cleanTest :ftgo-end-to-end-tests:test -x :ftgo-end-to-end-tests:composeUp
+        run: ./run-end-to-end-tests.sh
 
       # スキャン対象は、起動したコンテナが実際に使ったイメージ（作業フォルダ名に左右されない）
       - name: Record images used
