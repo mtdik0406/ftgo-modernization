@@ -76,9 +76,6 @@ dockerCompose {
   projectName = null
   removeOrphans = true
   retainContainersOnStartupFailure = true
-  // イメージは composeBuild で 1 回だけビルドする。起動のたびにビルドすると、ビルドの来歴情報（attestation）で
-  // 毎回別のイメージになる環境（GitHub Actions など）では、2 回目の起動で MySQL が作り直されて binlog が初期化される
-  buildBeforeUp = false
 
   if (project.hasProperty('startedServices'))
     startedServices= project.ext.startedServices.split(',')
@@ -100,7 +97,6 @@ dockerCompose {
 }
 
 composeUp.dependsOn(infrastructureComposeUp)
-infrastructureComposeUp.dependsOn(composeBuild)
 
 subprojects.each {
   if (it.name.endsWith("-service") || it.name.endsWith("-gateway")) {
