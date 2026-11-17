@@ -66,4 +66,4 @@ dockerCompose {
     projectName = null
 }
 
-test.dependsOn(composeUp)
+// 全サービスはルートの :composeUp で起動しておく（ここで composeUp するともう一度起動し、MySQL が作り直されることがある）
