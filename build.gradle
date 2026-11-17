@@ -67,6 +67,7 @@ task compileAll(type: GradleBuild) {
 dockerCompose {
 
   environment.put "EVENTUATE_COMMON_VERSION", eventuateCommonImageVersion
+  environment.put "EVENTUATE_ZOOKEEPER_VERSION", eventuateZookeeperImageVersion
   environment.put "EVENTUATE_CDC_VERSION", eventuateCdcImageVersion
   environment.put "EVENTUATE_SAGA_VERSION", eventuateTramSagasImageVersion
   environment.put "EVENTUATE_JAVA_BASE_IMAGE_VERSION", eventuateExamplesBaseImageVersion
@@ -75,6 +76,9 @@ dockerCompose {
   projectName = null
   removeOrphans = true
   retainContainersOnStartupFailure = true
+  // イメージは composeBuild で 1 回だけビルドする。起動のたびにビルドすると、ビルドの来歴情報（attestation）で
+  // 毎回別のイメージになる環境（GitHub Actions など）では、2 回目の起動で MySQL が作り直されて binlog が初期化される
+  buildBeforeUp = false
 
   if (project.hasProperty('startedServices'))
     startedServices= project.ext.startedServices.split(',')
@@ -96,6 +100,7 @@ dockerCompose {
 }
 
 composeUp.dependsOn(infrastructureComposeUp)
+infrastructureComposeUp.dependsOn(composeBuild)
 
 subprojects.each {
   if (it.name.endsWith("-service") || it.name.endsWith("-gateway")) {
