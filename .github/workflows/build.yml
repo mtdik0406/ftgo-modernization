@@ -22,6 +22,9 @@ env:
   # docker-compose.yml は公開ポートを 127.0.0.1 だけにしている（#2）。gradle-docker-compose-plugin は
   # Linux では既定でネットワークのゲートウェイの IP（172.x.0.1）につなぐため、つなぐ先を明示する
   SERVICES_HOST: "127.0.0.1"
+  # ビルドの来歴情報（attestation）を付けると、中身が同じでもビルドのたびに別のイメージになり、
+  # サブプロジェクトの composeUp などでビルドし直したときに MySQL が作り直されて binlog が初期化されるため付けない
+  BUILDX_NO_DEFAULT_ATTESTATIONS: "1"
 
 jobs:
   build:
@@ -55,6 +58,57 @@ jobs:
         with:
           name: unit-test-reports
           path: "**/build/reports/tests/"
+          retention-days: 7
+
+  integration:
+    name: Integration and component tests
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+      # gradle-docker-compose-plugin 0.15.2 は単体の docker-compose コマンドを呼ぶ
+      - name: Provide docker-compose command
+        run: |
+          if ! command -v docker-compose >/dev/null; then
+            printf '#!/bin/sh\nexec docker compose "$@"\n' | sudo tee /usr/local/bin/docker-compose >/dev/null
+            sudo chmod +x /usr/local/bin/docker-compose
+          fi
+          docker-compose version
+
+      - name: Publish contract stubs
+        run: ./gradlew buildContracts
+
+      # 手順は build-and-test-all.sh と同じ
+      - name: Integration tests
+        run: |
+          ./gradlew infrastructureComposeUp
+          ./gradlew integrationTest
+
+      - name: Component tests
+        run: |
+          ./gradlew infrastructureComposeDown
+          ./gradlew infrastructureComposeUp
+          ./gradlew cleanComponentTest componentTest
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: integration-test-reports
+          path: |
+            **/build/reports/tests/integrationTest/
+            **/build/reports/tests/componentTest/
           retention-days: 7
 
   e2e:
@@ -97,7 +151,7 @@ jobs:
 
       # スキャン対象は、起動したコンテナが実際に使ったイメージ（作業フォルダ名に左右されない）
       - name: Record images used
-        if: always() && steps.start.outcome != 'skipped'
+        if: ${{ !cancelled() && steps.start.outcome != 'skipped' }}
         run: |
           mkdir -p build/trivy
           docker ps -a --format '{{.Image}}' | sort -u > build/trivy/images.txt
@@ -110,11 +164,11 @@ jobs:
           for c in $(docker ps -a --format '{{.Names}}'); do docker logs "$c" > "build/container-logs/$c.log" 2>&1 || true; done
 
       - name: Stop services
-        if: always() && steps.start.outcome != 'skipped'
+        if: ${{ !cancelled() && steps.start.outcome != 'skipped' }}
         run: ./gradlew :composeDown
 
       - name: Install trivy
-        if: always() && steps.start.outcome != 'skipped'
+        if: ${{ !cancelled() && steps.start.outcome != 'skipped' }}
         run: |
           curl -fsSLo trivy.tar.gz "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
           echo "${TRIVY_SHA256}  trivy.tar.gz" | sha256sum -c -
@@ -123,7 +177,7 @@ jobs:
 
       # 今は既知の脆弱性が多いため、件数を記録するだけで失敗にはしない（#13 で見直す）
       - name: Scan images
-        if: always() && steps.start.outcome != 'skipped'
+        if: ${{ !cancelled() && steps.start.outcome != 'skipped' }}
         continue-on-error: true
         run: |
           {
